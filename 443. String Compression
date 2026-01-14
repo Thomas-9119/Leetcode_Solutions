@@ -1,0 +1,94 @@
+class Solution {
+public:
+    // Compute union area of rectangles
+    double unionArea(vector<array<double, 4>>& rects) {
+        vector<double> ys;
+        for (auto &r : rects) {
+            ys.push_back(r[1]);
+            ys.push_back(r[3]);
+        }
+
+        sort(ys.begin(), ys.end());
+        ys.erase(unique(ys.begin(), ys.end()), ys.end());
+
+        double area = 0;
+
+        for (int i = 0; i + 1 < ys.size(); i++) {
+            double y1 = ys[i], y2 = ys[i + 1];
+            if (y2 <= y1) continue;
+
+            vector<pair<double, double>> intervals;
+            for (auto &r : rects) {
+                if (r[1] <= y1 && r[3] >= y2) {
+                    intervals.push_back({r[0], r[2]});
+                }
+            }
+
+            if (intervals.empty()) continue;
+
+            sort(intervals.begin(), intervals.end());
+
+            double width = 0;
+            double curL = intervals[0].first;
+            double curR = intervals[0].second;
+
+            for (int j = 1; j < intervals.size(); j++) {
+                if (intervals[j].first > curR) {
+                    width += curR - curL;
+                    curL = intervals[j].first;
+                    curR = intervals[j].second;
+                } else {
+                    curR = max(curR, intervals[j].second);
+                }
+            }
+            width += curR - curL;
+
+            area += width * (y2 - y1);
+        }
+
+        return area;
+    }
+
+    double separateSquares(vector<vector<int>>& squares) {
+        double low = 1e18, high = -1e18;
+
+        for (auto &s : squares) {
+            low = min(low, (double)s[1]);
+            high = max(high, (double)s[1] + s[2]);
+        }
+
+        for (int iter = 0; iter < 60; iter++) {
+            double mid = (low + high) / 2;
+
+            vector<array<double, 4>> above, below;
+
+            for (auto &s : squares) {
+                double x = s[0];
+                double y = s[1];
+                double side = s[2];
+
+                double bottom = y;
+                double top = y + side;
+
+                if (mid <= bottom) {
+                    above.push_back({x, bottom, x + side, top});
+                } else if (mid >= top) {
+                    below.push_back({x, bottom, x + side, top});
+                } else {
+                    above.push_back({x, mid, x + side, top});
+                    below.push_back({x, bottom, x + side, mid});
+                }
+            }
+
+            double areaAbove = unionArea(above);
+            double areaBelow = unionArea(below);
+
+            if (areaAbove > areaBelow)
+                low = mid;
+            else
+                high = mid;
+        }
+
+        return (low + high) / 2;
+    }
+};
